@@ -133,6 +133,12 @@ onMounted(load)
 
       <button type="submit" :disabled="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
     </form>
+
+    <section class="security-section">
+      <h2>Security</h2>
+      <p class="note">Register a passkey to sign in with Face ID / Touch ID instead of a password.</p>
+      <DashboardPasskeyManager />
+    </section>
   </div>
 </template>
 
@@ -154,6 +160,19 @@ h1 {
   flex-direction: column;
   gap: var(--space-24);
   max-width: 560px;
+}
+
+.security-section {
+  margin-top: var(--space-48);
+  padding-top: var(--space-24);
+  border-top: 1px solid var(--border-soft);
+  max-width: 560px;
+}
+
+.security-section h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0 0 var(--space-8);
 }
 
 .field {
