@@ -26,6 +26,23 @@
   --space-96: 96px;
 }
 
+/* Dark mode — role-based token swap (docs/features-scope.md §5). Surfaces
+   invert (raised panels stay lighter than the page bg, same relationship as
+   light mode); text/border roles keep the same relative emphasis order.
+   Values drafted here (not specified in design-system.md); accent is
+   brightened slightly so the terracotta still reads clearly on a dark bg. */
+[data-theme='dark'] {
+  --bg: #121210;
+  --surface: #1b1b18;
+  --text: #f2f2ef;
+  --text-secondary: #b8b8b3;
+  --text-tertiary: #8a8a85;
+  --text-faint: #6d6d68;
+  --border-dash: #4a4a44;
+  --border-soft: #333330;
+  --accent: #e0693f;
+}
+
 *,
 *::before,
 *::after {

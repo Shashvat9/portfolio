@@ -2,6 +2,11 @@
 // design-system.md §04 — hidden-until-scroll: translateY(-100%) at top,
 // slides in past 80px scroll. 1px bottom border only, no shadow.
 const visible = ref(false)
+const colorMode = useColorMode()
+
+function toggleColorMode() {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
 
 function onScroll() {
   visible.value = window.scrollY > 80
@@ -27,6 +32,9 @@ function scrollToId(id: string) {
     <div class="nav-links">
       <button type="button" @click="scrollToId('work')">WORK</button>
       <button type="button" @click="scrollToId('contact')">CONTACT</button>
+      <button type="button" class="theme-toggle" :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleColorMode">
+        {{ colorMode.value === 'dark' ? '☀' : '☾' }}
+      </button>
     </div>
   </nav>
 </template>
@@ -81,6 +89,10 @@ function scrollToId(id: string) {
 
 .nav-links button:hover {
   color: var(--accent);
+}
+
+.theme-toggle {
+  font-size: 14px;
 }
 
 @media (min-width: 768px) {
