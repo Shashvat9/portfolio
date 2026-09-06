@@ -6,6 +6,27 @@ async function signOut() {
   await supabase.auth.signOut()
   await navigateTo('/login')
 }
+
+// Auto-logout after 15 minutes of no activity — any mouse/keyboard/touch/
+// scroll input resets the timer.
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000
+const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const
+let idleTimer: ReturnType<typeof setTimeout> | undefined
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer)
+  idleTimer = setTimeout(signOut, IDLE_TIMEOUT_MS)
+}
+
+onMounted(() => {
+  ACTIVITY_EVENTS.forEach((evt) => window.addEventListener(evt, resetIdleTimer, { passive: true }))
+  resetIdleTimer()
+})
+
+onUnmounted(() => {
+  ACTIVITY_EVENTS.forEach((evt) => window.removeEventListener(evt, resetIdleTimer))
+  clearTimeout(idleTimer)
+})
 </script>
 
 <template>
