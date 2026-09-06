@@ -1,0 +1,63 @@
+/* Design tokens — docs/design-system.md §01-03.
+   Named as roles, not raw values, so dark mode (§ added in Stage 5) is a
+   token swap: surfaces invert, text/border roles stay semantically identical. */
+
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --text: #111111;
+  --text-secondary: #555555;
+  --text-tertiary: #888888;
+  --text-faint: #999999;
+  --border-dash: #b3b3ad;
+  --border-soft: #d8d8d2;
+  --accent: #c1502e;
+
+  --font-display: 'Newsreader', ui-serif, Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-96: 96px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1,
+h2,
+h3,
+blockquote {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
