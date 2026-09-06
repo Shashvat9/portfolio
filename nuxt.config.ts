@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     '@nuxt/fonts',
     '@nuxtjs/color-mode',
+    '@vercel/analytics/nuxt',
   ],
 
   supabase: {
