@@ -19,6 +19,13 @@ export default defineNuxtConfig({
       include: ['/dashboard', '/dashboard/*'],
       exclude: [],
     },
+    clientOptions: {
+      auth: {
+        // Passkey (WebAuthn) sign-in — experimental API, opt-in required.
+        // https://supabase.com/docs/guides/auth/passkeys
+        experimental: { passkey: true },
+      },
+    },
   },
 
   colorMode: {
