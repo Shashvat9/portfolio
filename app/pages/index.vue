@@ -63,4 +63,10 @@ useHead({
     padding: 0 var(--space-48);
   }
 }
+
+@media (min-width: 1024px) {
+  .work-section {
+    padding: 0 var(--space-96);
+  }
+}
 </style>

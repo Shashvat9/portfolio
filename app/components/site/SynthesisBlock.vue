@@ -10,7 +10,8 @@ defineProps<{ line: string }>()
 
 <style scoped>
 .synthesis {
-  padding: var(--space-48) var(--space-24);
+  /* §03 mobile/tablet/desktop section-padding progression: 24 → 48 → 96 */
+  padding: var(--space-24);
   max-width: 760px;
   margin: 0 auto;
   text-align: center;
@@ -26,7 +27,13 @@ blockquote {
 
 @media (min-width: 768px) {
   .synthesis {
-    padding: var(--space-96) var(--space-48);
+    padding: var(--space-48);
+  }
+}
+
+@media (min-width: 1024px) {
+  .synthesis {
+    padding: var(--space-96);
   }
 }
 </style>

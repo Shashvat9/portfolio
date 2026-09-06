@@ -154,4 +154,10 @@ function imageUrl(path: string) {
     padding: var(--space-48) 0;
   }
 }
+
+@media (min-width: 1024px) {
+  .project-card {
+    padding: var(--space-96) 0;
+  }
+}
 </style>

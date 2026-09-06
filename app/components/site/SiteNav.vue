@@ -69,11 +69,17 @@ function scrollToId(id: string) {
   color: var(--text);
   cursor: pointer;
   padding: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-links {
   display: flex;
+  align-items: center;
   gap: var(--space-24);
+  flex-shrink: 0;
 }
 
 .nav-links button {
@@ -93,6 +99,16 @@ function scrollToId(id: string) {
 
 .theme-toggle {
   font-size: 14px;
+}
+
+@media (max-width: 400px) {
+  .nav-links {
+    gap: var(--space-16);
+  }
+
+  .brand {
+    font-size: 14px;
+  }
 }
 
 @media (min-width: 768px) {

@@ -25,6 +25,8 @@ defineProps<{
 
 <style scoped>
 .site-footer {
+  /* §03 gives footer padding its own fixed token (32), distinct from the
+     24/48/96 section-padding progression — not scaled by breakpoint. */
   padding: var(--space-32) var(--space-24);
   border-top: 1px solid var(--border-soft);
   text-align: center;
@@ -70,11 +72,5 @@ defineProps<{
 .sep {
   margin: 0 var(--space-8);
   color: var(--text-faint);
-}
-
-@media (min-width: 768px) {
-  .site-footer {
-    padding: var(--space-48);
-  }
 }
 </style>
