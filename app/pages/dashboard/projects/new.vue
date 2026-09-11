@@ -17,7 +17,7 @@ const errorMessage = ref('')
 
 async function create() {
   if (!eyebrow.value.trim() || !title.value.trim() || !body.value.trim()) {
-    errorMessage.value = 'Eyebrow, title and body are required.'
+    errorMessage.value = 'Category, title and body are required.'
     return
   }
   saving.value = true
@@ -51,27 +51,40 @@ async function create() {
 
 <template>
   <div>
-    <p class="eyebrow">PROJECTS</p>
-    <h1>New project</h1>
-    <p class="note">Tags, version tiles and images are added after the project is created.</p>
+    <div class="dash-head">
+      <div>
+        <p class="dash-kicker">Projects</p>
+        <h1 class="dash-title">New project</h1>
+      </div>
+    </div>
+    <p class="dash-note intro">
+      Creating this adds a node to the graph on the site — the layout
+      recalculates itself, no code change needed. Tags, version tiles and
+      images are added after the project exists.
+    </p>
 
-    <form class="project-form" @submit.prevent="create">
-      <label class="field">
-        <span>Eyebrow (e.g. "05 · CATEGORY")</span>
+    <form class="dash-form" @submit.prevent="create">
+      <label class="dash-field">
+        <span>Category (e.g. "Accessibility / IoT")</span>
         <input v-model="eyebrow" type="text" />
+        <small class="field-hint">
+          Separate facets with <code>/</code> or <code>·</code> — they render as
+          individual labels. Any leading "01 ·" counter is dropped and ALL-CAPS
+          is softened automatically, so write it however you like.
+        </small>
       </label>
 
-      <label class="field">
+      <label class="dash-field">
         <span>Title</span>
         <input v-model="title" type="text" />
       </label>
 
-      <label class="field">
+      <label class="dash-field">
         <span>Body copy</span>
         <textarea v-model="body" rows="4" />
       </label>
 
-      <label class="field">
+      <label class="dash-field">
         <span>Variant</span>
         <select v-model="variant">
           <option value="work">Work entry (role / team)</option>
@@ -80,98 +93,48 @@ async function create() {
       </label>
 
       <template v-if="variant === 'work'">
-        <label class="field">
+        <label class="dash-field">
           <span>Role</span>
           <input v-model="role" type="text" placeholder="Backend" />
         </label>
-        <label class="field">
+        <label class="dash-field">
           <span>Team</span>
           <input v-model="team" type="text" placeholder="6 eng." />
         </label>
       </template>
 
-      <label v-else class="field">
+      <label v-else class="dash-field">
         <span>Citation</span>
         <textarea v-model="citation" rows="2" />
       </label>
 
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="dash-error">{{ errorMessage }}</p>
 
-      <button type="submit" :disabled="saving">{{ saving ? 'Creating…' : 'Create project' }}</button>
+      <button type="submit" class="dash-btn" :disabled="saving">{{ saving ? 'Creating…' : 'Create project' }}</button>
     </form>
   </div>
 </template>
 
 <style scoped>
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  color: var(--text-tertiary);
-  margin: 0 0 var(--space-8);
-}
-
-h1 {
-  font-size: 28px;
-  margin-bottom: var(--space-8);
-}
-
-.note {
-  color: var(--text-faint);
-  font-size: 12px;
-  margin-bottom: var(--space-24);
-}
-
-.project-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
+.intro {
   max-width: 560px;
+  margin-bottom: var(--space-24);
+  padding-left: var(--space-12);
+  border-left: 1px solid var(--accent);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
+.field-hint {
   font-size: 12px;
-  color: var(--text-secondary);
+  line-height: 1.5;
+  color: var(--text-faint);
 }
 
-input,
-textarea,
-select {
+.field-hint code {
   font-family: var(--font-mono);
-  font-size: 13px;
-  padding: var(--space-12);
-  border: 1px solid var(--border-soft);
-  background: var(--surface);
-  color: var(--text);
-  resize: vertical;
+  font-size: 11px;
 }
 
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 1px solid var(--accent);
-}
-
-.error {
-  color: var(--accent);
-  font-size: 12px;
-  margin: 0;
-}
-
-button {
+.dash-btn {
   align-self: flex-start;
-  padding: var(--space-12) var(--space-24);
-  border: 1px solid var(--text);
-  background: var(--text);
-  color: var(--surface);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 </style>

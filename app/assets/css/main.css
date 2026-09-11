@@ -7,11 +7,24 @@
   --surface: #ffffff;
   --text: #111111;
   --text-secondary: #555555;
-  --text-tertiary: #888888;
-  --text-faint: #999999;
+  /* Darkened from the original #888888 / #999999: both failed WCAG AA on the
+     page background (3.39:1 and 2.73:1). These hit 5.46:1 and 4.84:1 while
+     keeping the same relative emphasis order. */
+  --text-tertiary: #67675f;
+  --text-faint: #6f6f68;
   --border-dash: #b3b3ad;
   --border-soft: #d8d8d2;
   --accent: #c1502e;
+
+  /* System layer — the graph reads as live instrumentation over the page,
+     so it gets its own roles rather than borrowing text/border tokens. */
+  --edge: #cfcfc7;
+  --edge-active: #c1502e;
+  --node: #9a9a92;
+  --node-active: #c1502e;
+  --packet: #c1502e;
+  --grid: #e7e7e1;
+  --core-line: #c9c9c1;
 
   --font-display: 'Newsreader', ui-serif, Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
@@ -37,10 +50,34 @@
   --text: #f2f2ef;
   --text-secondary: #b8b8b3;
   --text-tertiary: #8a8a85;
-  --text-faint: #6d6d68;
+  /* #6d6d68 was 3.61:1 on the dark background — lifted to 5.05:1. */
+  --text-faint: #85857e;
   --border-dash: #4a4a44;
   --border-soft: #333330;
   --accent: #e0693f;
+
+  --edge: #3a3a35;
+  --edge-active: #e0693f;
+  --node: #6f6f69;
+  --node-active: #e0693f;
+  --packet: #e0693f;
+  --grid: #232320;
+  --core-line: #3f3f39;
+}
+
+/* Registered so calc()/clamp() on them is well-defined, and so an unset
+   --scrub resolves to 1 — i.e. scroll-scrubbed sequences render in their
+   finished state when JS never runs or motion is reduced. */
+@property --scrub {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --local {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
 }
 
 *,
@@ -53,13 +90,20 @@ html,
 body {
   padding: 0;
   margin: 0;
-  overflow-x: hidden;
+  /* `clip`, not `hidden`: overflow-x:hidden turns body into a scroll
+     container, which silently breaks `position: sticky` for every descendant
+     — including the scroll-scrubbed build sequence. `clip` trims the same
+     overflow without creating a scrollport. */
+  overflow-x: clip;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-mono);
+  /* Prose is set in the serif. Mono is reserved for things that are actually
+     structural — version labels, node ids, system readouts — rather than used
+     as page-wide texture. */
+  font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -78,4 +122,23 @@ a {
 
 button {
   font-family: inherit;
+}
+
+/* Reduced motion: a genuinely static end-state, not a slowed-down animation.
+   Every graph path resolves fully drawn, packets are removed from the render
+   tree entirely, and scrubbed sequences pin to their assembled state. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

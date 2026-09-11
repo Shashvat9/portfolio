@@ -30,8 +30,8 @@ function scrollToId(id: string) {
   <nav class="site-nav" :class="{ visible }">
     <button type="button" class="brand" @click="scrollToId('top')">Shashvat Rajyaguru</button>
     <div class="nav-links">
-      <button type="button" @click="scrollToId('work')">WORK</button>
-      <button type="button" @click="scrollToId('contact')">CONTACT</button>
+      <button type="button" @click="scrollToId('work')">Work</button>
+      <button type="button" @click="scrollToId('contact')">Contact</button>
       <button type="button" class="theme-toggle" :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleColorMode">
         {{ colorMode.value === 'dark' ? '☀' : '☾' }}
       </button>
@@ -86,11 +86,10 @@ function scrollToId(id: string) {
   background: none;
   border: none;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 14px;
   color: var(--text-secondary);
   padding: 0;
+  transition: color 0.15s ease;
 }
 
 .nav-links button:hover {

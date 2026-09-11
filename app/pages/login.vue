@@ -53,7 +53,7 @@ async function onSubmit() {
 <template>
   <div class="login-page">
     <div class="login-card">
-      <p class="eyebrow">DASHBOARD</p>
+      <p class="eyebrow"><span class="node" aria-hidden="true" />Control</p>
       <h1>Sign in</h1>
 
       <button
@@ -118,14 +118,26 @@ async function onSubmit() {
 }
 
 .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.15em;
-  color: var(--text-tertiary);
+  color: var(--text-faint);
   margin: 0;
 }
 
+.eyebrow .node {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 h1 {
-  font-size: 28px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: -0.015em;
   color: var(--text);
   margin-bottom: var(--space-8);
 }

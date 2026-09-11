@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { moveWithin, changedRows } from '~/utils/reorder'
 
 const props = defineProps<{ projectId: string }>()
 
@@ -41,16 +42,18 @@ async function removeTag(id: string) {
 }
 
 async function move(index: number, direction: -1 | 1) {
-  const target = index + direction
-  if (target < 0 || target >= tags.value.length) return
-  const a = tags.value[index]
-  const b = tags.value[target]
-  const { error } = await supabase.from('project_tags').upsert([
-    { id: a.id, project_id: a.project_id, tag_text: a.tag_text, order_index: b.order_index },
-    { id: b.id, project_id: b.project_id, tag_text: b.tag_text, order_index: a.order_index },
-  ])
-  if (error) errorMessage.value = error.message
-  else await load()
+  const next = moveWithin(tags.value, index, direction)
+  if (!next) return
+  const previous = tags.value
+  const writes = changedRows(previous, next)
+  tags.value = next
+  const { error } = await supabase.from('project_tags').upsert(writes)
+  if (error) {
+    errorMessage.value = error.message
+    tags.value = previous
+  } else {
+    await load()
+  }
 }
 
 onMounted(load)
