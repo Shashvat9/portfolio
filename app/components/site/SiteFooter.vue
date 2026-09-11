@@ -10,16 +10,14 @@ defineProps<{
   <footer id="contact" class="site-footer">
     <p class="name">Shashvat Rajyaguru</p>
     <p class="copyright">© 2026</p>
-    <div class="links">
-      <a v-if="email" :href="`mailto:${email}`">EMAIL</a>
-      <span v-else class="disabled">EMAIL</span>
-      <span class="sep">·</span>
-      <a v-if="linkedin" :href="linkedin" target="_blank" rel="noopener">LINKEDIN</a>
-      <span v-else class="disabled">LINKEDIN</span>
-      <span class="sep">·</span>
-      <a v-if="resumeUrl" :href="resumeUrl" target="_blank" rel="noopener">RESUME ↓</a>
-      <span v-else class="disabled">RESUME ↓</span>
-    </div>
+    <nav class="links" aria-label="Contact">
+      <a v-if="email" :href="`mailto:${email}`">Email</a>
+      <span v-else class="disabled">Email</span>
+      <a v-if="linkedin" :href="linkedin" target="_blank" rel="noopener">LinkedIn</a>
+      <span v-else class="disabled">LinkedIn</span>
+      <a v-if="resumeUrl" :href="resumeUrl" target="_blank" rel="noopener">Resume ↓</a>
+      <span v-else class="disabled">Resume ↓</span>
+    </nav>
   </footer>
 </template>
 
@@ -43,25 +41,33 @@ defineProps<{
 }
 
 .copyright {
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-faint);
   margin: 0;
 }
 
 .links {
-  font-size: 11px;
-  letter-spacing: 0.05em;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-24);
+  font-size: 15px;
   color: var(--text-secondary);
-  margin-top: var(--space-8);
+  margin-top: var(--space-12);
 }
 
 .links a {
   color: var(--text-secondary);
   text-decoration: none;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .links a:hover {
   color: var(--accent);
+  border-color: var(--accent);
 }
 
 .disabled {
@@ -69,8 +75,5 @@ defineProps<{
   opacity: 0.5;
 }
 
-.sep {
-  margin: 0 var(--space-8);
-  color: var(--text-faint);
-}
+
 </style>

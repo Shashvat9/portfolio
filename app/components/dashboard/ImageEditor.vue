@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { moveWithin, changedRows } from '~/utils/reorder'
 
 const props = defineProps<{ projectId: string }>()
 
@@ -52,21 +53,30 @@ async function onFileChange(e: Event) {
 async function removeImage(img: ProjectImage) {
   await supabase.storage.from('images').remove([img.storage_path])
   const { error } = await supabase.from('project_images').delete().eq('id', img.id)
-  if (error) errorMessage.value = error.message
-  else await load()
+  if (error) {
+    errorMessage.value = error.message
+    return
+  }
+  const remaining = images.value.filter((i) => i.id !== img.id).map((i, idx) => ({ ...i, order_index: idx }))
+  const writes = changedRows(images.value, remaining)
+  if (writes.length) await supabase.from('project_images').upsert(writes)
+  await load()
 }
 
+/** Image order is frame order in the build sequence — keep it dense. */
 async function move(index: number, direction: -1 | 1) {
-  const target = index + direction
-  if (target < 0 || target >= images.value.length) return
-  const a = images.value[index]
-  const b = images.value[target]
-  const { error } = await supabase.from('project_images').upsert([
-    { ...a, order_index: b.order_index },
-    { ...b, order_index: a.order_index },
-  ])
-  if (error) errorMessage.value = error.message
-  else await load()
+  const next = moveWithin(images.value, index, direction)
+  if (!next) return
+  const previous = images.value
+  const writes = changedRows(previous, next)
+  images.value = next
+  const { error } = await supabase.from('project_images').upsert(writes)
+  if (error) {
+    errorMessage.value = error.message
+    images.value = previous
+  } else {
+    await load()
+  }
 }
 
 onMounted(load)
@@ -74,10 +84,16 @@ onMounted(load)
 
 <template>
   <div class="image-editor">
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="dash-error">{{ errorMessage }}</p>
+    <p class="frame-count">
+      {{ images.length
+        ? `${images.length} ${images.length === 1 ? 'frame' : 'frames'} — the sequence scrubs through these in order`
+        : 'No images — the sequence falls back to the generated schematic' }}
+    </p>
     <div class="image-grid">
       <div v-for="(img, i) in images" :key="img.id" class="image-tile">
         <img :src="publicUrl(img.storage_path)" :alt="`Project image ${i + 1}`" />
+        <p class="frame-index">frame {{ i + 1 }}</p>
         <div class="image-actions">
           <button type="button" :disabled="i === 0" @click="move(i, -1)">←</button>
           <button type="button" :disabled="i === images.length - 1" @click="move(i, 1)">→</button>
@@ -86,7 +102,7 @@ onMounted(load)
       </div>
     </div>
     <input ref="fileInput" type="file" accept="image/*" @change="onFileChange" />
-    <span v-if="uploading" class="note">Uploading…</span>
+    <span v-if="uploading" class="dash-note">Uploading…</span>
   </div>
 </template>
 
@@ -142,13 +158,17 @@ onMounted(load)
   color: var(--accent);
 }
 
-.note {
+.frame-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-faint);
-  font-size: 12px;
+  margin: 0;
 }
 
-.error {
-  color: var(--accent);
-  font-size: 12px;
+.frame-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  margin: 0;
 }
 </style>

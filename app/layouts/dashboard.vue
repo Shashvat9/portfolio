@@ -33,7 +33,10 @@ onUnmounted(() => {
   <div class="dashboard-shell">
     <header class="dashboard-nav">
       <div class="nav-left">
-        <NuxtLink to="/dashboard" class="brand">Dashboard</NuxtLink>
+        <NuxtLink to="/dashboard" class="brand">
+          <span class="brand-node" aria-hidden="true" />
+          Control
+        </NuxtLink>
         <NuxtLink to="/dashboard" exact-active-class="active">Site content</NuxtLink>
         <NuxtLink to="/dashboard/projects" active-class="active">Projects</NuxtLink>
       </div>
@@ -72,18 +75,48 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-24);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 17px;
+  color: var(--text);
   margin-right: var(--space-16);
+}
+
+/* The live core node, same marker as the site's graph — the dashboard is the
+   same system seen from the inside. */
+.brand-node {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: core-pulse 3s ease-in-out infinite;
+}
+
+@keyframes core-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-node {
+    animation: none;
+  }
 }
 
 a {
   text-decoration: none;
   color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--text);
 }
 
 a.active {
@@ -96,6 +129,8 @@ a.active {
 }
 
 .user-email {
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-faint);
 }
 
@@ -105,6 +140,7 @@ button {
   color: var(--text-secondary);
   padding: var(--space-8) var(--space-12);
   cursor: pointer;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
@@ -115,7 +151,7 @@ button:hover {
 
 .dashboard-content {
   padding: var(--space-24);
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 

@@ -1,31 +1,63 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { categoryFacets } from '~/utils/category'
 
 type Project = Database['public']['Tables']['projects']['Row'] & {
+  category?: string | null
   project_tags: Database['public']['Tables']['project_tags']['Row'][]
   project_versions: Database['public']['Tables']['project_versions']['Row'][]
   project_images: Database['public']['Tables']['project_images']['Row'][]
 }
 
-const props = defineProps<{ project: Project }>()
+const props = defineProps<{ project: Project; index: number }>()
 
 const supabase = useSupabaseClient<Database>()
+const { activeIndex } = useSystemState()
+const { emit: emitPulse } = useSignalPulse()
 
-const paragraphs = computed(() => props.project.body.split('\n\n'))
+const section = ref<HTMLElement | null>(null)
+useSectionWatcher(section, props.index)
+
+const isActive = computed(() => activeIndex.value === props.index)
+
+const paragraphs = computed(() => props.project.body.split('\n\n').filter(Boolean))
+const facets = computed(() => categoryFacets(props.project))
 const tags = computed(() => [...props.project.project_tags].sort((a, b) => a.order_index - b.order_index))
 const versions = computed(() => [...props.project.project_versions].sort((a, b) => a.order_index - b.order_index))
-const images = computed(() => [...props.project.project_images].sort((a, b) => a.order_index - b.order_index))
-const hasMeta = computed(() => Boolean(props.project.role || props.project.team))
 
-function imageUrl(path: string) {
-  return supabase.storage.from('images').getPublicUrl(path).data.publicUrl
+const images = computed(() =>
+  [...props.project.project_images]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((img) => ({ id: img.id, url: supabase.storage.from('images').getPublicUrl(img.storage_path).data.publicUrl })),
+)
+
+/** Hovering the card sends a signal back to the pinned graph. Throttled to
+    one pulse per entry so a mouse crossing the card doesn't flood the edge. */
+function onEnter() {
+  emitPulse(props.project.id)
 }
 </script>
 
 <template>
-  <article class="project-card">
-    <p class="eyebrow">{{ project.eyebrow }}</p>
-    <h2 class="title">{{ project.title }}</h2>
+  <article
+    :id="`project-${project.id}`"
+    ref="section"
+    class="project"
+    :class="{ 'is-active': isActive }"
+    @mouseenter="onEnter"
+    @focusin="onEnter"
+  >
+    <header class="head">
+      <span class="node-glyph" aria-hidden="true" />
+
+      <!-- Category travels as discrete facets tied to the node, not as an
+           ALL-CAPS eyebrow or a middot-joined string. -->
+      <ul v-if="facets.length" class="facets">
+        <li v-for="facet in facets" :key="facet">{{ facet }}</li>
+      </ul>
+
+      <h2 class="title">{{ project.title }}</h2>
+    </header>
 
     <div class="body">
       <p v-for="(para, i) in paragraphs" :key="i">{{ para }}</p>
@@ -35,57 +67,125 @@ function imageUrl(path: string) {
       <li v-for="tag in tags" :key="tag.id">{{ tag.tag_text }}</li>
     </ul>
 
-    <div v-if="hasMeta" class="meta-row">
-      <span v-if="project.role"><b>ROLE</b> {{ project.role }}</span>
-      <span v-if="project.team"><b>TEAM</b> {{ project.team }}</span>
-    </div>
+    <dl v-if="project.role || project.team" class="meta">
+      <div v-if="project.role">
+        <dt>Role</dt>
+        <dd>{{ project.role }}</dd>
+      </div>
+      <div v-if="project.team">
+        <dt>Team</dt>
+        <dd>{{ project.team }}</dd>
+      </div>
+    </dl>
 
     <p v-if="project.citation" class="citation">{{ project.citation }}</p>
 
-    <SiteVersionTiles v-if="versions.length" :versions="versions" />
-
-    <div v-if="images.length" class="image-grid">
-      <img v-for="img in images" :key="img.id" :src="imageUrl(img.storage_path)" :alt="project.title" />
-    </div>
+    <SiteVersionSequence :versions="versions" :images="images" :title="project.title" />
   </article>
 </template>
 
 <style scoped>
-.project-card {
-  padding: var(--space-24) 0;
+.project {
+  position: relative;
+  padding: var(--space-48) 0;
   border-top: 1px solid var(--border-soft);
 }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
+/* A hairline rail down the left edge that fills in while the section is being
+   read — the page's own "signal is here" cue, matching the graph. */
+.project::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-16) * -1);
+  top: var(--space-48);
+  bottom: var(--space-48);
+  width: 1px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  opacity: 0.5;
+  transition: transform 0.5s ease;
+}
+
+.project.is-active::before {
+  transform: scaleY(1);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+}
+
+.node-glyph {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--node);
+  background: var(--bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.project.is-active .node-glyph {
+  background: var(--node-active);
+  border-color: var(--node-active);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Facets: sentence case, separate elements, no middots. */
+.facets {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
   color: var(--text-tertiary);
-  margin: 0 0 var(--space-8);
+}
+
+.facets li + li {
+  position: relative;
+  padding-left: var(--space-12);
+}
+
+.facets li + li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.28em;
+  bottom: 0.28em;
+  width: 1px;
+  background: var(--border-soft);
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(30px, 4.6vw, 46px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   color: var(--text);
-  margin: 0 0 var(--space-16);
+  margin: 0;
 }
 
 .body {
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
-  max-width: 640px;
-  margin-bottom: var(--space-16);
+  max-width: 62ch;
+  margin-bottom: var(--space-24);
 }
 
 .body p {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.62;
   color: var(--text-secondary);
   margin: 0;
 }
 
+/* Mono earns its place on tags: these are literal technical identifiers. */
 .tags {
   list-style: none;
   display: flex;
@@ -109,55 +209,59 @@ function imageUrl(path: string) {
   color: var(--accent);
 }
 
-.meta-row {
+.meta {
   display: flex;
-  gap: var(--space-16);
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+  gap: var(--space-24);
+  margin: 0 0 var(--space-16);
 }
 
-.meta-row b {
-  color: var(--text-tertiary);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  margin-right: var(--space-4);
+.meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta dt {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.meta dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .citation {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--text-faint);
-  border-left: 2px solid var(--border-soft);
+  border-left: 1px solid var(--border-soft);
   padding-left: var(--space-12);
-  max-width: 560px;
+  max-width: 60ch;
   margin: 0 0 var(--space-8);
 }
 
-.image-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-16);
-  margin-top: var(--space-24);
-}
-
-.image-grid img {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
-  border: 1px solid var(--border-soft);
-  display: block;
-}
-
 @media (min-width: 768px) {
-  .project-card {
-    padding: var(--space-48) 0;
+  .project {
+    padding: var(--space-96) 0;
+  }
+
+  .project::before {
+    left: calc(var(--space-32) * -1);
+    top: var(--space-96);
+    bottom: var(--space-96);
+  }
+
+  .head {
+    margin-bottom: var(--space-24);
   }
 }
 
-@media (min-width: 1024px) {
-  .project-card {
-    padding: var(--space-96) 0;
+@media (prefers-reduced-motion: reduce) {
+  .project::before {
+    transition: none;
   }
 }
 </style>

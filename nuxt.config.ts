@@ -45,11 +45,12 @@ export default defineNuxtConfig({
     ],
   },
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/dashboard.css'],
 
   app: {
     head: {
       title: 'Shashvat Rajyaguru',
+      htmlAttrs: { lang: 'en' },
     },
   },
 })

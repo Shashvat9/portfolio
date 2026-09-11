@@ -16,6 +16,12 @@ const { data: projects } = await useAsyncData('projects', async () => {
   return data ?? []
 })
 
+/** The graph is driven by whatever the dashboard currently holds — node count,
+    order and labels all come straight from this list. */
+const graphItems = computed(() =>
+  (projects.value ?? []).map((p) => ({ id: p.id, title: p.title })),
+)
+
 const resumeUrl = computed(() => {
   const path = siteContent.value?.resume_file_path
   if (!path) return null
@@ -24,25 +30,41 @@ const resumeUrl = computed(() => {
 
 useHead({
   title: 'Shashvat Rajyaguru',
+  meta: [
+    {
+      name: 'description',
+      content: siteContent.value?.hero_hook || 'Shashvat Rajyaguru — engineer.',
+    },
+  ],
 })
 </script>
 
 <template>
   <div class="page">
     <SiteNav />
-    <SiteHero v-if="siteContent" :hook="siteContent.hero_hook" />
 
-    <section id="work" class="work-section">
-      <SiteProjectCard v-for="project in projects" :key="project.id" :project="project" />
-    </section>
+    <main>
+      <SiteHero v-if="siteContent" :hook="siteContent.hero_hook" :items="graphItems" />
 
-    <SiteSynthesisBlock v-if="siteContent" :line="siteContent.synthesis_line" />
+      <section id="work" class="work-section">
+        <SiteProjectCard
+          v-for="(project, i) in projects"
+          :key="project.id"
+          :project="project"
+          :index="i"
+        />
+      </section>
+
+      <SiteSynthesisBlock v-if="siteContent" :line="siteContent.synthesis_line" />
+    </main>
 
     <SiteFooter
       :email="siteContent?.footer_email ?? ''"
       :linkedin="siteContent?.footer_linkedin ?? ''"
       :resume-url="resumeUrl"
     />
+
+    <SiteMiniGraph :items="graphItems" />
   </div>
 </template>
 

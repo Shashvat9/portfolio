@@ -82,31 +82,40 @@ onMounted(load)
   <div>
     <NuxtLink to="/dashboard/projects" class="back-link">← Back to projects</NuxtLink>
 
-    <p v-if="loading" class="note">Loading…</p>
-    <p v-else-if="notFound" class="error">Project not found.</p>
+    <p v-if="loading" class="dash-note">Loading…</p>
+    <p v-else-if="notFound" class="dash-error">Project not found.</p>
 
     <template v-else>
-      <p class="eyebrow">EDIT PROJECT</p>
-      <h1>{{ title }}</h1>
+      <div class="dash-head">
+        <div>
+          <p class="dash-kicker">Editing node</p>
+          <h1 class="dash-title">{{ title }}</h1>
+        </div>
+      </div>
 
-      <section class="panel">
-        <form class="project-form" @submit.prevent="save">
-          <label class="field">
-            <span>Eyebrow</span>
+      <section class="dash-panel">
+        <form class="dash-form" @submit.prevent="save">
+          <label class="dash-field">
+            <span>Category (e.g. "Accessibility / IoT")</span>
             <input v-model="eyebrow" type="text" />
+        <small class="field-hint">
+          Separate facets with <code>/</code> or <code>·</code> — they render as
+          individual labels. Any leading "01 ·" counter is dropped and ALL-CAPS
+          is softened automatically, so write it however you like.
+        </small>
           </label>
 
-          <label class="field">
+          <label class="dash-field">
             <span>Title</span>
             <input v-model="title" type="text" />
           </label>
 
-          <label class="field">
+          <label class="dash-field">
             <span>Body copy</span>
             <textarea v-model="body" rows="4" />
           </label>
 
-          <label class="field">
+          <label class="dash-field">
             <span>Variant</span>
             <select v-model="variant">
               <option value="work">Work entry (role / team)</option>
@@ -115,44 +124,52 @@ onMounted(load)
           </label>
 
           <template v-if="variant === 'work'">
-            <label class="field">
+            <label class="dash-field">
               <span>Role</span>
               <input v-model="role" type="text" placeholder="Backend" />
             </label>
-            <label class="field">
+            <label class="dash-field">
               <span>Team</span>
               <input v-model="team" type="text" placeholder="6 eng." />
             </label>
           </template>
 
-          <label v-else class="field">
+          <label v-else class="dash-field">
             <span>Citation</span>
             <textarea v-model="citation" rows="2" />
           </label>
 
-          <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-          <p v-if="savedAt" class="saved">Saved.</p>
+          <p v-if="errorMessage" class="dash-error">{{ errorMessage }}</p>
+          <p v-if="savedAt" class="dash-ok">Saved.</p>
 
           <div class="form-actions">
-            <button type="submit" :disabled="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
-            <button type="button" class="delete-btn" @click="removeProject">Delete project</button>
+            <button type="submit" class="dash-btn" :disabled="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+            <button type="button" class="dash-btn dash-btn-danger" @click="removeProject">Delete project</button>
           </div>
         </form>
       </section>
 
-      <section class="panel">
+      <section class="dash-panel">
         <h2>Tags</h2>
         <DashboardTagEditor :project-id="projectId" />
       </section>
 
-      <section class="panel">
+      <section class="dash-panel">
         <h2>Version tiles</h2>
-        <p class="note">Optional — only projects with an iteration history (like the DP wayfinding device) need these.</p>
+        <p class="dash-note">
+          Optional. Tiles drive the scroll-scrubbed build sequence on the site —
+          their order is the order the sequence assembles in, and the scroll
+          timing redistributes itself across however many tiles exist.
+        </p>
         <DashboardVersionEditor :project-id="projectId" />
       </section>
 
-      <section class="panel">
+      <section class="dash-panel">
         <h2>Images</h2>
+        <p class="dash-note">
+          Images become the frames of the build sequence, replacing the generated
+          schematic. With none uploaded the schematic is used instead.
+        </p>
         <DashboardImageEditor :project-id="projectId" />
       </section>
     </template>
@@ -160,73 +177,28 @@ onMounted(load)
 </template>
 
 <style scoped>
+.field-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.field-hint code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
 .back-link {
   display: inline-block;
   margin-bottom: var(--space-24);
   color: var(--text-tertiary);
   text-decoration: none;
-  font-size: 12px;
-}
-
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  color: var(--text-tertiary);
-  margin: 0 0 var(--space-8);
-}
-
-h1 {
-  font-size: 28px;
-  margin-bottom: var(--space-24);
-}
-
-h2 {
-  font-family: var(--font-display);
-  font-size: 18px;
-  margin: 0 0 var(--space-12);
-}
-
-.panel {
-  padding: var(--space-24) 0;
-  border-top: 1px solid var(--border-soft);
-}
-
-.panel:first-of-type {
-  border-top: none;
-  padding-top: 0;
-}
-
-.project-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  max-width: 560px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-input,
-textarea,
-select {
   font-family: var(--font-mono);
-  font-size: 13px;
-  padding: var(--space-12);
-  border: 1px solid var(--border-soft);
-  background: var(--surface);
-  color: var(--text);
-  resize: vertical;
+  font-size: 12px;
 }
 
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 1px solid var(--accent);
+.back-link:hover {
+  color: var(--text);
 }
 
 .form-actions {
@@ -235,40 +207,4 @@ select:focus {
   gap: var(--space-16);
 }
 
-button {
-  padding: var(--space-12) var(--space-24);
-  border: 1px solid var(--text);
-  background: var(--text);
-  color: var(--surface);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.delete-btn {
-  background: transparent;
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.error {
-  color: var(--accent);
-  font-size: 12px;
-  margin: 0;
-}
-
-.saved {
-  color: var(--text-secondary);
-  font-size: 12px;
-  margin: 0;
-}
-
-.note {
-  color: var(--text-faint);
-  font-size: 12px;
-}
 </style>

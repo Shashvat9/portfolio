@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { moveWithin, changedRows } from '~/utils/reorder'
 
 const props = defineProps<{ projectId: string }>()
 
@@ -57,21 +58,34 @@ async function updateVersion(v: ProjectVersion) {
 
 async function removeVersion(id: string) {
   const { error } = await supabase.from('project_versions').delete().eq('id', id)
-  if (error) errorMessage.value = error.message
-  else await load()
+  if (error) {
+    errorMessage.value = error.message
+    return
+  }
+  const remaining = versions.value.filter((v) => v.id !== id).map((v, i) => ({ ...v, order_index: i }))
+  const writes = changedRows(versions.value, remaining)
+  if (writes.length) await supabase.from('project_versions').upsert(writes)
+  await load()
 }
 
+/**
+ * Tile order is the order the site's build sequence assembles in, so it has to
+ * survive duplicate or gapped indices — renumber the list densely rather than
+ * swapping two values.
+ */
 async function move(index: number, direction: -1 | 1) {
-  const target = index + direction
-  if (target < 0 || target >= versions.value.length) return
-  const a = versions.value[index]
-  const b = versions.value[target]
-  const { error } = await supabase.from('project_versions').upsert([
-    { ...a, order_index: b.order_index },
-    { ...b, order_index: a.order_index },
-  ])
-  if (error) errorMessage.value = error.message
-  else await load()
+  const next = moveWithin(versions.value, index, direction)
+  if (!next) return
+  const previous = versions.value
+  const writes = changedRows(previous, next)
+  versions.value = next
+  const { error } = await supabase.from('project_versions').upsert(writes)
+  if (error) {
+    errorMessage.value = error.message
+    versions.value = previous
+  } else {
+    await load()
+  }
 }
 
 onMounted(load)
@@ -79,9 +93,13 @@ onMounted(load)
 
 <template>
   <div class="version-editor">
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="dash-error">{{ errorMessage }}</p>
+    <p v-if="versions.length" class="stage-count">
+      {{ versions.length }} {{ versions.length === 1 ? 'stage' : 'stages' }} in the build sequence
+    </p>
 
     <div v-for="(v, i) in versions" :key="v.id" class="version-row">
+      <span class="stage-dot" :class="{ pending: v.status === 'in_progress' }" aria-hidden="true" />
       <div class="version-fields">
         <input v-model="v.label" placeholder="V1 · 2019" @blur="updateVersion(v)" />
         <input v-model="v.sublabel" placeholder="breadboard prototype" @blur="updateVersion(v)" />
@@ -92,9 +110,9 @@ onMounted(load)
         </select>
       </div>
       <div class="version-actions">
-        <button type="button" title="Move up" :disabled="i === 0" @click="move(i, -1)">↑</button>
-        <button type="button" title="Move down" :disabled="i === versions.length - 1" @click="move(i, 1)">↓</button>
-        <button type="button" class="remove" @click="removeVersion(v.id)">Remove</button>
+        <button type="button" class="dash-btn-ghost" title="Move earlier" :disabled="i === 0" @click="move(i, -1)">↑</button>
+        <button type="button" class="dash-btn-ghost" title="Move later" :disabled="i === versions.length - 1" @click="move(i, 1)">↓</button>
+        <button type="button" class="dash-btn-ghost remove" @click="removeVersion(v.id)">Remove</button>
       </div>
     </div>
 
@@ -108,7 +126,7 @@ onMounted(load)
           <option value="in_progress">in_progress</option>
         </select>
       </div>
-      <button type="button" @click="addVersion">+ Add tile</button>
+      <button type="button" class="dash-btn-ghost" @click="addVersion">+ Add tile</button>
     </div>
   </div>
 </template>
@@ -120,12 +138,35 @@ onMounted(load)
   gap: var(--space-12);
 }
 
+.stage-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
 .version-row {
   display: flex;
   align-items: flex-start;
   gap: var(--space-12);
   padding: var(--space-12);
   border: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+/* Marks each tile as a stage of the sequence, matching the site's tiles. */
+.stage-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 9px;
+  flex-shrink: 0;
+}
+
+.stage-dot.pending {
+  background: transparent;
+  border: 1px dotted var(--accent);
 }
 
 .new-row {
@@ -158,28 +199,8 @@ select {
   flex-shrink: 0;
 }
 
-.version-actions button,
-.new-row > button {
-  border: 1px solid var(--border-soft);
-  background: transparent;
-  padding: var(--space-8);
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.version-actions button:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
 .remove {
   color: var(--accent);
-}
-
-.error {
-  color: var(--accent);
-  font-size: 12px;
 }
 
 @media (max-width: 640px) {
