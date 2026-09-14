@@ -39,6 +39,7 @@ onUnmounted(() => {
         </NuxtLink>
         <NuxtLink to="/dashboard" exact-active-class="active">Site content</NuxtLink>
         <NuxtLink to="/dashboard/projects" active-class="active">Projects</NuxtLink>
+        <NuxtLink to="/dashboard/experience" active-class="active">Experience</NuxtLink>
       </div>
       <div class="nav-right">
         <NuxtLink to="/" target="_blank" class="view-site">View site ↗</NuxtLink>

@@ -134,8 +134,8 @@ const gridId = useId()
         class="ring-group"
         :style="edgeStyle(arc.index, arc.length)"
       >
-        <path class="ring-edge" :d="arc.d" :path-length="PATH_UNITS" />
-        <path class="ring-flow" :d="arc.d" :path-length="PATH_UNITS" />
+        <path class="ring-edge" :d="arc.d" :pathLength="PATH_UNITS" />
+        <path class="ring-flow" :d="arc.d" :pathLength="PATH_UNITS" />
       </g>
     </g>
 
@@ -148,9 +148,9 @@ const gridId = useId()
         :style="edgeStyle(edge.index, edge.length)"
       >
         <!-- base line (draw-in) -->
-        <path class="edge" :d="edge.d" :path-length="PATH_UNITS" />
+        <path class="edge" :d="edge.d" :pathLength="PATH_UNITS" />
         <!-- continuous packet flow -->
-        <path class="flow" :d="edge.d" :path-length="PATH_UNITS" />
+        <path class="flow" :d="edge.d" :pathLength="PATH_UNITS" />
       </g>
     </g>
 
@@ -161,7 +161,7 @@ const gridId = useId()
         :key="p.key"
         class="pulse"
         :d="p.d"
-        :path-length="PATH_UNITS"
+        :pathLength="PATH_UNITS"
         :style="{ '--pulse-duration': `${p.duration}s` }"
         @animationend="dropPulse(p.key)"
       />

@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      experience: {
+        Row: {
+          created_at: string
+          description: string
+          end_date: string | null
+          id: string
+          location: string | null
+          order_index: number
+          organization: string
+          role: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number
+          organization: string
+          role: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number
+          organization?: string
+          role?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      experience_tags: {
+        Row: {
+          experience_id: string
+          id: string
+          order_index: number
+          tag_text: string
+        }
+        Insert: {
+          experience_id: string
+          id?: string
+          order_index?: number
+          tag_text: string
+        }
+        Update: {
+          experience_id?: string
+          id?: string
+          order_index?: number
+          tag_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_tags_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experience"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_images: {
         Row: {
           id: string
@@ -123,6 +191,7 @@ export type Database = {
           title: string
           updated_at: string
           variant: string
+          visual: string | null
         }
         Insert: {
           body: string
@@ -136,6 +205,7 @@ export type Database = {
           title: string
           updated_at?: string
           variant: string
+          visual?: string | null
         }
         Update: {
           body?: string
@@ -149,6 +219,7 @@ export type Database = {
           title?: string
           updated_at?: string
           variant?: string
+          visual?: string | null
         }
         Relationships: []
       }

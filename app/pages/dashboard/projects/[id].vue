@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { VISUAL_OPTIONS, visualKind } from '~/utils/visual'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -15,6 +16,19 @@ const variant = ref<'work' | 'research'>('work')
 const role = ref('')
 const team = ref('')
 const citation = ref('')
+/** Empty string = derive from this project's own tags/category. */
+const visual = ref('')
+/** Tag text, loaded only so the "derive" option can show what it would pick. */
+const tagTexts = ref<string[]>([])
+
+const derivedLabel = computed(() => {
+  const kind = visualKind({
+    visual: null,
+    eyebrow: eyebrow.value,
+    project_tags: tagTexts.value.map((tag_text) => ({ tag_text })),
+  })
+  return VISUAL_OPTIONS.find((o) => o.value === kind)?.label ?? kind
+})
 
 const loading = ref(true)
 const saving = ref(false)
@@ -37,7 +51,15 @@ async function load() {
     role.value = data.role ?? ''
     team.value = data.team ?? ''
     citation.value = data.citation ?? ''
+    visual.value = data.visual ?? ''
   }
+  const { data: tags } = await supabase
+    .from('project_tags')
+    .select('tag_text')
+    .eq('project_id', projectId)
+    .order('order_index')
+  tagTexts.value = (tags ?? []).map((t) => t.tag_text)
+
   loading.value = false
 }
 
@@ -54,6 +76,7 @@ async function save() {
       role: variant.value === 'work' ? role.value.trim() || null : null,
       team: variant.value === 'work' ? team.value.trim() || null : null,
       citation: variant.value === 'research' ? citation.value.trim() || null : null,
+      visual: visual.value || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', projectId)
@@ -139,6 +162,22 @@ onMounted(load)
             <textarea v-model="citation" rows="2" />
           </label>
 
+          <label class="dash-field">
+            <span>Section visual</span>
+            <select v-model="visual">
+              <option value="">Derive from tags (recommended)</option>
+              <option v-for="opt in VISUAL_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }} — {{ opt.hint }}
+              </option>
+            </select>
+            <small class="field-hint">
+              The scroll-driven visual this project's section renders. Left on
+              derive it follows the project's own tags and category, so it
+              keeps up as the content changes — currently it would pick
+              <b>{{ derivedLabel }}</b>. Uploaded images override it either way.
+            </small>
+          </label>
+
           <p v-if="errorMessage" class="dash-error">{{ errorMessage }}</p>
           <p v-if="savedAt" class="dash-ok">Saved.</p>
 
@@ -151,7 +190,7 @@ onMounted(load)
 
       <section class="dash-panel">
         <h2>Tags</h2>
-        <DashboardTagEditor :project-id="projectId" />
+        <DashboardTagEditor :parent-id="projectId" owner="project" />
       </section>
 
       <section class="dash-panel">

@@ -16,6 +16,16 @@ const { data: projects } = await useAsyncData('projects', async () => {
   return data ?? []
 })
 
+/** Roles for the timeline, in the dashboard's manual order. Tags come along
+    so the timeline can render the same pills the project sections use. */
+const { data: experience } = await useAsyncData('experience', async () => {
+  const { data } = await supabase
+    .from('experience')
+    .select('*, experience_tags(*)')
+    .order('order_index')
+  return data ?? []
+})
+
 /** The graph is driven by whatever the dashboard currently holds — node count,
     order and labels all come straight from this list. */
 const graphItems = computed(() =>
@@ -54,6 +64,14 @@ useHead({
           :index="i"
         />
       </section>
+
+      <!-- Experience sits inside the evidence block, between the systems and
+           the conclusion drawn from them: the projects argue what was built,
+           the timeline argues where, and the synthesis line then closes over
+           both. Placing it before the projects would reframe the page as a
+           résumé — which the footer's PDF already is — and placing it after
+           the synthesis would leave a closing statement stranded mid-page. -->
+      <SiteExperienceTimeline v-if="experience?.length" :entries="experience" />
 
       <SiteSynthesisBlock v-if="siteContent" :line="siteContent.synthesis_line" />
     </main>

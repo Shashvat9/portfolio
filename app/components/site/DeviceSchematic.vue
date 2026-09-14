@@ -50,19 +50,19 @@ const modules = computed(() => {
   <svg class="schematic" viewBox="0 0 420 300" fill="none" role="presentation" aria-hidden="true">
     <g v-for="layer in layers" :key="layer.name" class="layer" :class="`l-${layer.name}`" :style="layer.style">
       <template v-if="layer.name === 'substrate'">
-        <rect class="draw" x="60" y="70" width="300" height="180" rx="4" path-length="100" />
+        <rect class="draw" x="60" y="70" width="300" height="180" rx="4" pathLength="100" />
       </template>
 
       <template v-else-if="layer.name === 'grid'">
         <g class="hair">
-          <path v-for="x in 5" :key="`v${x}`" class="draw" :d="`M${60 + x * 50},76 L${60 + x * 50},244`" path-length="100" />
-          <path v-for="y in 2" :key="`h${y}`" class="draw" :d="`M66,${70 + y * 60} L354,${70 + y * 60}`" path-length="100" />
+          <path v-for="x in 5" :key="`v${x}`" class="draw" :d="`M${60 + x * 50},76 L${60 + x * 50},244`" pathLength="100" />
+          <path v-for="y in 2" :key="`h${y}`" class="draw" :d="`M66,${70 + y * 60} L354,${70 + y * 60}`" pathLength="100" />
         </g>
       </template>
 
       <template v-else-if="layer.name === 'bus'">
-        <path class="draw trace" d="M60 160 L96 160 L96 118 L210 118" path-length="100" />
-        <path class="draw trace" d="M360 190 L300 190 L300 232 L170 232" path-length="100" />
+        <path class="draw trace" d="M60 160 L96 160 L96 118 L210 118" pathLength="100" />
+        <path class="draw trace" d="M360 190 L300 190 L300 232 L170 232" pathLength="100" />
       </template>
 
       <template v-else-if="layer.name === 'core-block'">
@@ -80,12 +80,12 @@ const modules = computed(() => {
       </template>
 
       <template v-else-if="layer.name === 'signal'">
-        <path class="draw arc" d="M300 84 A 40 40 0 0 1 340 112" path-length="100" />
-        <path class="draw arc" d="M300 70 A 56 56 0 0 1 354 112" path-length="100" />
+        <path class="draw arc" d="M300 84 A 40 40 0 0 1 340 112" pathLength="100" />
+        <path class="draw arc" d="M300 70 A 56 56 0 0 1 354 112" pathLength="100" />
       </template>
 
       <template v-else>
-        <rect class="draw shell" x="40" y="50" width="340" height="220" rx="10" path-length="100" />
+        <rect class="draw shell" x="40" y="50" width="340" height="220" rx="10" pathLength="100" />
       </template>
     </g>
   </svg>

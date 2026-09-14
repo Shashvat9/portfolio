@@ -1,10 +1,33 @@
 <script setup lang="ts">
+/**
+ * Tag pill editor, shared by projects and experience entries.
+ *
+ * `project_tags` and `experience_tags` have the same shape (parent id,
+ * tag_text, order_index) and the site renders both with the same pill, so this
+ * is one component rather than two that drift apart.
+ *
+ * The queries branch on `owner` instead of building the table and column names
+ * dynamically: Supabase's generated types tie the table to its own columns, so
+ * a computed table name only type-checks behind casts that would hide a real
+ * mistake (pointing `experience_id` at `project_tags`, say). Two short typed
+ * branches keep the checker doing its job; the UI below stays shared.
+ */
 import type { Database } from '~/types/database.types'
 import { moveWithin, changedRows } from '~/utils/reorder'
 
-const props = defineProps<{ projectId: string }>()
+type TagOwner = 'project' | 'experience'
 
-type Tag = Database['public']['Tables']['project_tags']['Row']
+const props = withDefaults(
+  defineProps<{ parentId: string; owner?: TagOwner }>(),
+  { owner: 'project' },
+)
+
+/** The columns both tables share — all this component reads or reorders. */
+interface Tag {
+  id: string
+  tag_text: string
+  order_index: number
+}
 
 const supabase = useSupabaseClient<Database>()
 const tags = ref<Tag[]>([])
@@ -12,11 +35,13 @@ const newTag = ref('')
 const errorMessage = ref('')
 
 async function load() {
-  const { data, error } = await supabase
-    .from('project_tags')
-    .select('*')
-    .eq('project_id', props.projectId)
-    .order('order_index')
+  const { data, error } =
+    props.owner === 'experience'
+      ? await supabase.from('experience_tags').select('id, tag_text, order_index')
+          .eq('experience_id', props.parentId).order('order_index')
+      : await supabase.from('project_tags').select('id, tag_text, order_index')
+          .eq('project_id', props.parentId).order('order_index')
+
   if (error) errorMessage.value = error.message
   else tags.value = data ?? []
 }
@@ -24,9 +49,13 @@ async function load() {
 async function addTag() {
   const text = newTag.value.trim()
   if (!text) return
-  const { error } = await supabase
-    .from('project_tags')
-    .insert({ project_id: props.projectId, tag_text: text, order_index: tags.value.length })
+  const order_index = tags.value.length
+
+  const { error } =
+    props.owner === 'experience'
+      ? await supabase.from('experience_tags').insert({ experience_id: props.parentId, tag_text: text, order_index })
+      : await supabase.from('project_tags').insert({ project_id: props.parentId, tag_text: text, order_index })
+
   if (error) {
     errorMessage.value = error.message
     return
@@ -36,7 +65,11 @@ async function addTag() {
 }
 
 async function removeTag(id: string) {
-  const { error } = await supabase.from('project_tags').delete().eq('id', id)
+  const { error } =
+    props.owner === 'experience'
+      ? await supabase.from('experience_tags').delete().eq('id', id)
+      : await supabase.from('project_tags').delete().eq('id', id)
+
   if (error) errorMessage.value = error.message
   else await load()
 }
@@ -46,8 +79,22 @@ async function move(index: number, direction: -1 | 1) {
   if (!next) return
   const previous = tags.value
   const writes = changedRows(previous, next)
+  // Optimistic, then persist a dense 0..n-1 renumbering — same as every other
+  // ordered list in the dashboard.
   tags.value = next
-  const { error } = await supabase.from('project_tags').upsert(writes)
+
+  // The parent id travels with every upserted row. upsert can insert, not just
+  // update, and both tables require their foreign key — sending only the three
+  // shared columns would fail the moment a row was missing.
+  const { error } =
+    props.owner === 'experience'
+      ? await supabase.from('experience_tags').upsert(
+          writes.map((t) => ({ ...t, experience_id: props.parentId })),
+        )
+      : await supabase.from('project_tags').upsert(
+          writes.map((t) => ({ ...t, project_id: props.parentId })),
+        )
+
   if (error) {
     errorMessage.value = error.message
     tags.value = previous
@@ -57,6 +104,7 @@ async function move(index: number, direction: -1 | 1) {
 }
 
 onMounted(load)
+watch(() => props.parentId, load)
 </script>
 
 <template>

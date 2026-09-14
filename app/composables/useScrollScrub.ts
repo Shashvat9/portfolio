@@ -135,3 +135,35 @@ export function useHeroSentinel(el: Ref<HTMLElement | null>) {
 
   onUnmounted(() => observer?.disconnect())
 }
+
+/**
+ * True while `el` is nowhere near the viewport.
+ *
+ * Every idle animation on this site is a stroke-dashoffset loop, which the
+ * compositor cannot handle on its own — each animating path repaints every
+ * frame. Stage 8 already pauses the hero graph for exactly this reason; with
+ * four per-project visuals and a timeline added, leaving them all running at
+ * once is what turns "alive" into main-thread cost. Anything off-screen is
+ * paused, so the page only ever animates what someone is actually looking at.
+ *
+ * The margin keeps a screen of slack either side, so a visual is already
+ * running by the time it scrolls into view rather than starting visibly late.
+ */
+export function useOffscreenPause(el: Ref<HTMLElement | null>) {
+  // SSR and the pre-hydration paint must not pause anything, or a visual could
+  // render frozen for a viewer whose browser never runs the observer.
+  const paused = ref(false)
+  let observer: IntersectionObserver | undefined
+
+  onMounted(() => {
+    if (!el.value || typeof IntersectionObserver === 'undefined') return
+    observer = new IntersectionObserver(
+      ([entry]) => { paused.value = !entry?.isIntersecting },
+      { rootMargin: '100% 0px 100% 0px', threshold: 0 },
+    )
+    observer.observe(el.value)
+  })
+
+  onUnmounted(() => observer?.disconnect())
+  return paused
+}

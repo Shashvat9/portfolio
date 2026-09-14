@@ -74,9 +74,18 @@
   initial-value: 1;
 }
 
+/* Must inherit. Every scrubbed visual computes `--local` once on the element
+   that owns a stage (a schematic layer, a detection box, a pipeline stage, a
+   timeline entry) and then reads it from the strokes and labels *inside* that
+   element. Registered with `inherits: false`, those children silently resolved
+   to the initial value of 1 instead — which is why the Stage 8 schematic's
+   layers faded in correctly (opacity is set on the layer itself) while the
+   stroke draw-in on their paths never ran, and why the version tiles' markers
+   never scaled. Same initial value, so an element with no scrubbed ancestor
+   still renders finished. */
 @property --local {
   syntax: '<number>';
-  inherits: false;
+  inherits: true;
   initial-value: 1;
 }
 

@@ -31,6 +31,11 @@ function scrollToId(id: string) {
     <button type="button" class="brand" @click="scrollToId('top')">Shashvat Rajyaguru</button>
     <div class="nav-links">
       <button type="button" @click="scrollToId('work')">Work</button>
+      <!-- Experience earns a nav slot rather than a higher position on the
+           page: it is the first thing a recruiter looks for, so it needs to be
+           one click away, but moving it above the projects would turn the site
+           into the résumé it exists to supplement. -->
+      <button type="button" @click="scrollToId('experience')">Experience</button>
       <button type="button" @click="scrollToId('contact')">Contact</button>
       <button type="button" class="theme-toggle" :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleColorMode">
         {{ colorMode.value === 'dark' ? '☀' : '☾' }}
