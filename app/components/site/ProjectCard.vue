@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
 import { categoryFacets } from '~/utils/category'
+import { visualKind } from '~/utils/visual'
 
 type Project = Database['public']['Tables']['projects']['Row'] & {
   category?: string | null
+  visual?: string | null
   project_tags: Database['public']['Tables']['project_tags']['Row'][]
   project_versions: Database['public']['Tables']['project_versions']['Row'][]
   project_images: Database['public']['Tables']['project_images']['Row'][]
@@ -24,6 +26,14 @@ const paragraphs = computed(() => props.project.body.split('\n\n').filter(Boolea
 const facets = computed(() => categoryFacets(props.project))
 const tags = computed(() => [...props.project.project_tags].sort((a, b) => a.order_index - b.order_index))
 const versions = computed(() => [...props.project.project_versions].sort((a, b) => a.order_index - b.order_index))
+
+/** Which visual this project's section renders. Explicit column if set,
+    otherwise derived from the project's own tags and category — never from
+    its title, so renaming a project in the dashboard cannot change it. */
+const kind = computed(() => visualKind(props.project))
+
+/** Tag text feeds the generated visuals: detection classes, pipeline stages. */
+const labels = computed(() => tags.value.map((t) => t.tag_text))
 
 const images = computed(() =>
   [...props.project.project_images]
@@ -80,7 +90,14 @@ function onEnter() {
 
     <p v-if="project.citation" class="citation">{{ project.citation }}</p>
 
-    <SiteVersionSequence :versions="versions" :images="images" :title="project.title" />
+    <SiteProjectSequence
+      :versions="versions"
+      :images="images"
+      :title="project.title"
+      :kind="kind"
+      :project-key="project.id"
+      :labels="labels"
+    />
   </article>
 </template>
 

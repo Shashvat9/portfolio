@@ -1,19 +1,27 @@
 <script setup lang="ts">
 /**
- * Scroll-scrubbed build sequence. Replaces the static tile row: the visual
- * assembles as you scroll through the section and the tiles light up in step.
+ * The scroll-scrubbed stage that sits inside every project section.
  *
- * Everything is derived from the live data:
+ * Before Stage 9 this only appeared for projects carrying a version history or
+ * uploaded images, which is why three of the four sections were static. Now
+ * every project gets a visual, chosen by its `visual` kind (see
+ * utils/visual.ts) — but which visual, and how long its scroll runs, is still
+ * entirely a function of the live data:
+ *
+ *   · kind             = projects.visual, or derived from the project's tags
  *   · timeline length  = stage count × a per-stage scroll budget
+ *   · stage count      = version/image count, or the visual's own element count
  *   · tile thresholds  = index / version count
  *   · frame thresholds = index / (loadable) image count
- * A project with zero versions and zero images renders nothing at all; one
- * with images scrubs through them; one with versions but no images scrubs the
- * procedural schematic. Images that fail to load drop out of the timeline and
- * the remaining frames re-time themselves, so a deleted file degrades to a
- * shorter sequence rather than a blank frame.
+ *
+ * Uploaded images still win over any generated visual — a real photograph of
+ * the thing beats a diagram of it. Images that fail to load drop out and the
+ * remaining frames re-time, so a deleted file degrades to a shorter sequence
+ * rather than a blank frame.
  */
 import type { Database } from '~/types/database.types'
+import type { VisualKind } from '~/utils/visual'
+import { visualStageCount } from '~/composables/useProjectVisual'
 
 type Version = Database['public']['Tables']['project_versions']['Row']
 
@@ -21,6 +29,11 @@ const props = defineProps<{
   versions: Version[]
   images: { id: string; url: string }[]
   title: string
+  kind: VisualKind
+  /** Stable per-project seed for the generated geometry. Never the title. */
+  projectKey: string
+  /** Live tag text — detection classes, pipeline stage names. */
+  labels: string[]
 }>()
 
 const failed = ref<Set<string>>(new Set())
@@ -30,21 +43,25 @@ function onImageError(id: string) {
   failed.value = new Set(failed.value).add(id)
 }
 
-/** Total scrub stages — the longer of the two tracks, minimum one. */
-const stages = computed(() => Math.max(props.versions.length, usableImages.value.length, 1))
-/* Keyed off the declared image count, not the usable one: if every image 404s
-   the section still renders and degrades to the schematic, rather than
-   vanishing mid-page. */
-const hasContent = computed(() => props.versions.length > 0 || props.images.length > 0)
+/** Steps the generated visual has, when no images are driving the sequence. */
+const generatedStages = computed(() => visualStageCount(props.kind, props.labels.length))
+
+/** Total scrub stages — the longest track wins, minimum one. */
+const stages = computed(() =>
+  Math.max(props.versions.length, usableImages.value.length, generatedStages.value, 1),
+)
 
 /** Scroll budget grows with the stage count so every stage gets equal travel.
     The track is one viewport of lead-in plus one slice per stage; the scrub
     driver then maps (height − viewport) onto 0→1, so timing redistributes
-    automatically when a version or image is added or removed. */
+    automatically when a version, image or tag is added or removed. */
 const SVH_PER_STAGE = 55
-const trackStyle = computed(() => ({
-  minHeight: `calc(100svh + ${stages.value * SVH_PER_STAGE}svh)`,
-}))
+const trackStyle = computed(() => {
+  const height = `calc(100svh + ${stages.value * SVH_PER_STAGE}svh)`
+  // Same value drives min-height and contain-intrinsic-size, so a section that
+  // has not been rendered yet still reserves its true height.
+  return { minHeight: height, '--track-height': height }
+})
 
 function window_(index: number, count: number) {
   const t0 = count <= 1 ? 0 : index / count
@@ -58,10 +75,13 @@ const frameStyles = computed(() => usableImages.value.map((_, i) => window_(i, u
 const track = ref<HTMLElement | null>(null)
 // No overshoot: the track's own height already encodes the stage budget.
 useScrollScrub(track)
+
+/** Idle animation inside this section stops while the section is off-screen. */
+const paused = useOffscreenPause(track)
 </script>
 
 <template>
-  <div v-if="hasContent" ref="track" class="sequence" :style="trackStyle">
+  <div ref="track" class="sequence" :class="{ 'is-paused': paused }" :style="trackStyle">
     <div class="sticky">
       <div class="stage">
         <!-- Image-driven frames when the project has them… -->
@@ -78,7 +98,21 @@ useScrollScrub(track)
             @error="onImageError(img.id)"
           />
         </div>
-        <!-- …otherwise the system draws itself. -->
+
+        <!-- …otherwise the system draws itself, in whichever language this
+             project speaks. Same stroke weights, same packet grammar, same
+             accent across all four — only the behaviour differs. -->
+        <SiteDetectionFrame
+          v-else-if="kind === 'detection'"
+          :project-key="projectKey"
+          :labels="labels"
+        />
+        <SitePipelineFlow v-else-if="kind === 'pipeline'" :labels="labels" />
+        <SiteReasoningWeb
+          v-else-if="kind === 'reasoning'"
+          :project-key="projectKey"
+          :tag-count="labels.length"
+        />
         <SiteDeviceSchematic v-else :stages="stages" />
       </div>
 
@@ -215,8 +249,35 @@ useScrollScrub(track)
   }
 }
 
+/* Off-screen sections stop animating. Named selectors rather than `:deep(*)`:
+   a universal descendant selector makes the browser re-match every element in
+   the subtree each time the class flips. */
+.sequence.is-paused :deep(.flow),
+.sequence.is-paused :deep(.signal),
+.sequence.is-paused :deep(.thought),
+.sequence.is-paused :deep(.root-halo) {
+  animation-play-state: paused;
+}
+
+/* The decisive one for load cost. Each section's scrubbed track is several
+   viewports tall and all four are in the DOM from the first paint, so the
+   browser was styling, laying out and starting animations for ~100 SVG
+   elements nobody could see yet. `content-visibility: auto` lets it skip that
+   work until the section is near the viewport.
+
+   `contain-intrinsic-size: auto <height>` is what keeps this free of layout
+   shift: the track's height is already known (it is the scroll budget, set
+   inline from the stage count), so a skipped section still reserves exactly
+   the space it will occupy, and `auto` makes the browser remember the real
+   size once rendered. Sticky scrubbing inside is unaffected — the sticky
+   child still positions against the viewport, not against this element. */
+.sequence {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--track-height);
+}
+
 /* Static fallback: no sticky scrubbing at all. The sequence collapses to its
-   finished state — schematic fully drawn, last frame shown, every tile lit. */
+   finished state — visual fully drawn, last frame shown, every tile lit. */
 @media (prefers-reduced-motion: reduce) {
   .sequence {
     --scrub: 1;
